@@ -1,22 +1,41 @@
 pipeline {
-    agent any
-    tools{
-        maven 'maven-3.9.9'
-    }
+	agent any
 
-    stages {
-        stage('Build') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
+	stages{
+		stage('Checkout Code'){
+			steps{
+				checkout scm
+				}
+			}
 
-        stage('Deploy to tomcat server') {
-            steps {
-                    deploy adapters: [tomcat9(credentialsId: 'a68e0dfe-f85c-4b8b-87f0-3aba419695a1', path: '', url: 'http://54.151.134.78:8080/')], contextPath: 'maven-web-app', war: '**/*.war'
+	stage('Build'){
+		steps{
+		bat "mvn clean install -Dmaven.test.skip-true"
+		}
+	}
 
-                }
+	stage('Archive Artifact'){
+		steps{
+		archiveArtifact artifact: 'target/*.war' 
+		}
+	}
 
-        }
-    }
+	stage('Deployment'){
+		steps{
+		deploy adapters: [tomcat9(credentialsId: 'e03d3314-895c-4135-a5cc-3a4fe4caa3e8', path: '', url: 'http://192.11.15.124:8080/')], contextPath: null, war: 'target/*.war'
+		}
+	}
+
+	stage('Notif'){
+		steps{
+		emailtext{
+			subject: "Job Completed",
+			body: "Jenkins pipeline job completed",
+			to: "maxwalad@gmail.com"
+		}
+		}
+	}
+
+
+	}
 }
